@@ -1,10 +1,10 @@
-import '/config/form_casts.dart';
+import 'package:nylo_framework/nylo_framework.dart';
+
 import '/config/decoders.dart';
 import '/config/design.dart';
+import '/config/localization.dart';
 import '/config/theme.dart';
 import '/config/validation_rules.dart';
-import 'package:nylo_framework/nylo_framework.dart';
-import '/config/localization.dart';
 
 class AppProvider implements NyProvider {
   @override
@@ -23,7 +23,6 @@ class AppProvider implements NyProvider {
     nylo.addModelDecoders(modelDecoders);
     nylo.addControllers(controllers);
     nylo.addApiDecoders(apiDecoders);
-    nylo.addFormCasts(formCasts);
     nylo.useErrorStack();
 
     // Optional
@@ -34,7 +33,5 @@ class AppProvider implements NyProvider {
   }
 
   @override
-  afterBoot(Nylo nylo) async {
-
-  }
+  afterBoot(Nylo nylo) async {}
 }
