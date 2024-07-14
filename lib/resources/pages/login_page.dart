@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/app/controllers/auth_controller.dart';
+import 'package:flutter_app/app/controllers/login_controller.dart';
 import 'package:flutter_app/bootstrap/helpers.dart';
 import 'package:flutter_app/config/design.dart';
 import 'package:flutter_app/resources/pages/sign_up_page.dart';
@@ -9,34 +9,28 @@ import 'package:flutter_app/resources/widgets/safearea_widget.dart';
 import 'package:flutter_solidart/flutter_solidart.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends NyStatefulWidget<LoginController> {
   static const path = '/login';
 
-  LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
+  LoginPage({super.key}) : super(path, child: () => _LoginPageState());
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends NyState<LoginPage> {
+  /// [LoginController] controller
+  LoginController get controller => widget.controller;
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   Effect? _effect;
 
-  final _authController = Solid.get<AuthController>(
-    NyNavigator.instance.router.navigatorKey!.currentContext!,
-  );
-
   @override
-  void initState() {
-    super.initState();
-
+  boot() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _effect = Effect(
         (e) {
-          final hasError = _authController.authSignal.value.isError;
+          final hasError = controller.authSignal.value.isError;
 
           if (hasError == true) {
             showToastNotification(
@@ -51,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget view(BuildContext context) {
     return Scaffold(
       body: _buildBody(),
     );
@@ -59,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildBody() {
     return SignalBuilder(
-      signal: _authController.authSignal,
+      signal: controller.authController.authSignal,
       builder: (context, value, child) => Stack(
         children: [
           SafeAreaWidget(
@@ -85,15 +79,14 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   SizedBox(height: 48),
                   ButtonWidget.primary(
-                    context: context,
-                    title: 'Sign In',
-                    onPressed: () {
-                      _authController.signIn(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      );
-                    },
-                  ),
+                      context: context,
+                      title: 'Sign In',
+                      onPressed: () {
+                        controller.login(
+                          email: _emailController.text,
+                          password: _passwordController.text,
+                        );
+                      }),
                   SizedBox(height: 48),
                   Text('Not have an account yet?'),
                   SizedBox(height: 12),
@@ -129,7 +122,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void dispose() {
     _effect?.dispose();
-    _authController.dispose();
     super.dispose();
   }
 }

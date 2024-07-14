@@ -1,8 +1,9 @@
-import 'package:flutter_app/resources/pages/login_page.dart';
 import 'package:flutter_app/resources/pages/sign_up_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 import '/resources/pages/home_page.dart';
+import '/resources/pages/login_page.dart';
+import '/resources/pages/splash_page.dart';
 
 /* App Router
 |--------------------------------------------------------------------------
@@ -13,12 +14,21 @@ import '/resources/pages/home_page.dart';
 |-------------------------------------------------------------------------- */
 
 appRouter() => nyRoutes((router) {
-      router.route(HomePage.path, (context) => HomePage());
+      router.route(
+        SplashPage.path,
+        (context) => SplashPage(),
+        initialRoute: true,
+      );
+      router.route(
+        HomePage.path,
+        (context) => HomePage(),
+      );
       // Add your routes here
+
       router.route(
         LoginPage.path,
         (context) => LoginPage(),
-        initialRoute: true,
+        transition: PageTransitionType.fade,
       );
       router.route(
         SignUpPage.path,

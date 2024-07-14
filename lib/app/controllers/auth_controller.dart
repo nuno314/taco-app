@@ -1,18 +1,23 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:flutter_app/config/storage_keys.dart';
 import 'package:flutter_solidart/flutter_solidart.dart';
+import 'package:nylo_framework/nylo_framework.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AuthController {
-  AuthController() {
+class AuthSolidController {
+  AuthSolidController() {
     usernameSignal = Signal("");
     passwordSignal = Signal("");
     authSignal = Signal(const AuthSignal());
+    isLoggedIn = Signal(_isLoggedIn);
   }
 
   final supabase = Supabase.instance.client;
 
   late final Signal<String> usernameSignal;
   late final Signal<String> passwordSignal;
+  late final Signal<bool> isLoggedIn;
+  bool get _isLoggedIn => supabase.auth.currentUser != null;
 
   late final Signal<AuthSignal> authSignal;
 
@@ -26,10 +31,15 @@ class AuthController {
       ),
     );
     try {
-      await supabase.auth.signUp(
+      await supabase.auth
+          .signUp(
         email: email,
         password: password,
-      );
+      )
+          .then((res) {
+        final accessToken = res.session?.accessToken;
+        StorageKey.userToken.store(accessToken);
+      });
       authSignal.set(
         authSignal.value.copyWith(
           isLoading: false,
@@ -64,9 +74,17 @@ class AuthController {
       ),
     );
     try {
-      await supabase.auth.signInWithPassword(
+      await supabase.auth
+          .signInWithPassword(
         email: email,
         password: password,
+      )
+          .then(
+        (res) {
+          StorageKey.userToken.store(
+            res.session?.accessToken,
+          );
+        },
       );
       authSignal.set(
         authSignal.value.copyWith(
@@ -95,6 +113,27 @@ class AuthController {
   void dispose() {
     usernameSignal.dispose();
     passwordSignal.dispose();
+  }
+
+  void logOut() {
+    authSignal.set(
+      authSignal.value.copyWith(
+        isLoading: true,
+      ),
+    );
+
+    try {
+      supabase.auth.signOut().then((res) {
+        StorageKey.userToken.store(null);
+      });
+    } catch (e) {}
+    authSignal.set(
+      authSignal.value.copyWith(
+        isLoading: false,
+        isError: false,
+        isSuccess: false,
+      ),
+    );
   }
 }
 

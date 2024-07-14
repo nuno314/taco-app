@@ -10,6 +10,7 @@ class TextFieldWidget extends StatelessWidget {
     this.fillColor = false,
     this.hintText,
     this.title,
+    this.maxLines,
   });
 
   final TextEditingController? controller;
@@ -19,12 +20,14 @@ class TextFieldWidget extends StatelessWidget {
   final String? hintText;
   final String? title;
   final bool fillColor;
+  final int? maxLines;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       focusNode: focusNode,
+      maxLines: maxLines,
       decoration: decoration ??
           InputDecoration(
             filled: !enabled || fillColor,
@@ -32,6 +35,8 @@ class TextFieldWidget extends StatelessWidget {
               horizontal: 8,
               vertical: 6,
             ),
+            border: OutlineInputBorder(),
+
             hintText: hintText,
             // hintStyle: widget.hintStyle ?? themeData.textTheme.subtitle2,
             // errorText: value.validation,

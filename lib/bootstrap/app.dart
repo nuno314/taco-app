@@ -70,8 +70,8 @@ class AppBuild extends StatelessWidget {
                 ValueNotifier(locale ?? NyLocalization.instance.locale),
             builder: (context, Locale locale, _) => Solid(
               providers: [
-                Provider<AuthController>(
-                  create: () => AuthController(),
+                Provider<AuthSolidController>(
+                  create: () => AuthSolidController(),
                   dispose: (controller) => controller.dispose(),
                 ),
               ],

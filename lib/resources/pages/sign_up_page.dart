@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/app/controllers/auth_controller.dart';
+import 'package:flutter_app/app/controllers/sign_up_controller.dart';
 import 'package:flutter_app/bootstrap/helpers.dart';
 import 'package:flutter_app/config/design.dart';
 import 'package:flutter_app/resources/widgets/box_color.dart';
@@ -8,32 +9,25 @@ import 'package:flutter_app/resources/widgets/input_container.dart';
 import 'package:flutter_solidart/flutter_solidart.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
-class SignUpPage extends StatefulWidget {
+class SignUpPage extends NyStatefulWidget<SignUpController> {
   static const path = '/sign-up';
 
-  SignUpPage({super.key});
-
-  @override
-  State<SignUpPage> createState() => _SignUpPageState();
+  SignUpPage({super.key}) : super(path, child: () => _SignUpPageState());
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class _SignUpPageState extends NyState<SignUpPage> {
+  /// [SignUpController] controller
+  SignUpController get controller => widget.controller;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  late final AuthController _authController;
   Effect? _effect;
 
   @override
-  void initState() {
-    super.initState();
-
-    _authController = Solid.get<AuthController>(
-      NyNavigator.instance.router.navigatorKey!.currentContext!,
-    );
+  boot() async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _effect = Effect(
         (e) {
-          final hasError = _authController.authSignal.value.isError;
+          final hasError = controller.authSignal.value.isError;
 
           if (hasError == true) {
             showToastNotification(
@@ -55,9 +49,9 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildBody() {
-    final isSigningUpSignal = _authController.authSignal;
+    final isSigningUpSignal = controller.authSignal;
 
-    return SignalBuilder(
+    return SignalBuilder<AuthSignal>(
       signal: isSigningUpSignal,
       builder: (context, value, child) => Stack(
         children: [
@@ -96,7 +90,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         context: context,
                         title: 'Sign Up',
                         onPressed: () {
-                          _authController.signUp(
+                          controller.signUp(
                             email: _emailController.text,
                             password: _passwordController.text,
                           );
@@ -123,7 +117,6 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   void dispose() {
     _effect?.dispose();
-    _authController.dispose();
     super.dispose();
   }
 }

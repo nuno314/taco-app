@@ -1,5 +1,9 @@
+import 'package:flutter_app/app/controllers/sign_up_controller.dart';
+import 'package:flutter_app/app/controllers/splash_controller.dart';
+
 import '/app/controllers/home_controller.dart';
-import '/app/models/user.dart';
+import '/app/controllers/login_controller.dart';
+import '../app/models/profile.dart';
 import '/app/networking/api_service.dart';
 
 /* Model Decoders
@@ -11,9 +15,10 @@ import '/app/networking/api_service.dart';
 |-------------------------------------------------------------------------- */
 
 final Map<Type, dynamic> modelDecoders = {
-  List<User>: (data) => List.from(data).map((json) => User.fromJson(json)).toList(),
+  List<Profile>: (data) =>
+      List.from(data).map((json) => Profile.fromJson(json)).toList(),
   //
-  User: (data) => User.fromJson(data),
+  Profile: (data) => Profile.fromJson(data),
 
   // User: (data) => User.fromJson(data),
 };
@@ -32,7 +37,6 @@ final Map<Type, dynamic> apiDecoders = {
   // ...
 };
 
-
 /* Controller Decoders
 | -------------------------------------------------------------------------
 | Controller are used in pages.
@@ -41,8 +45,10 @@ final Map<Type, dynamic> apiDecoders = {
 |-------------------------------------------------------------------------- */
 final Map<Type, dynamic> controllers = {
   HomeController: () => HomeController(),
+  SplashController: () => SplashController(),
 
   // ...
 
+  LoginController: () => LoginController(),
+  SignUpController: () => SignUpController(),
 };
-
