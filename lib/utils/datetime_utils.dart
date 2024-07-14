@@ -29,4 +29,16 @@ extension DateTimeExt on DateTime {
 
     return '${dif.inHours} hours left';
   }
+
+  DateTime get startDate {
+    return DateTime(year, month, day);
+  }
+
+  DateTime get middle {
+    return DateTime(year, month, day, 12);
+  }
+
+  DateTime get endDate {
+    return DateTime(year, month, day, 23, 59, 59, 999);
+  }
 }

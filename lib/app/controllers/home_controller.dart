@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_app/app/controllers/auth_controller.dart';
-import 'package:flutter_app/app/models/profile.dart';
 import 'package:flutter_app/app/models/report.dart';
 import 'package:flutter_app/resources/widgets/bottom_sheet.dart';
 import 'package:flutter_app/resources/widgets/button_widget.dart';
@@ -24,7 +23,6 @@ class HomeController extends Controller {
   final _dailyReportCtrl = TextEditingController();
   final _dailyReportFcn = FocusNode();
 
-  late PersistentBottomSheetController _modalController;
   GlobalKey<ScaffoldState> modelKey = GlobalKey();
 
   @override
@@ -32,11 +30,28 @@ class HomeController extends Controller {
     super.construct(context);
     authController = Solid.get<AuthSolidController>(context);
     userId = supabase.auth.currentSession!.user.id;
-    homeSignal = Signal<HomeState>(const HomeStateInitial());
+    final initDailyReports = List.generate(
+      7,
+      (index) => Report(
+        createdAt: _firstDateOfWeek.copyWith(
+          day: index + _firstDateOfWeek.day,
+        ),
+      ),
+    );
+    homeSignal = Signal<HomeState>(
+      HomeStateInitial(
+        viewModel: _ViewModel(
+            dailyReports: initDailyReports,
+            selectedReport: initDailyReports
+                .firstWhere((e) => e.createdAt.isSameDay(DateTime.now()))),
+      ),
+    );
 
-    getProfile();
     getWeeklyReport();
+    getDailyReports();
   }
+
+  DateTime get _firstDateOfWeek => firstDateOfWeek(DateTime.now());
 
   final supabase = Supabase.instance.client;
   late final userId;
@@ -70,16 +85,25 @@ class HomeController extends Controller {
     authController.logOut();
   }
 
-  Future<void> getProfile() async {
+  late final Signal<HomeState> homeSignal;
+
+  Future<void> getDailyReports() async {
+    showLoading();
     try {
-      supabase.from("profiles").select().eq('id', userId).single().then((json) {
-        final user = Profile.fromJson(json);
-        print(user.username);
-      });
+      supabase
+          .from('daily-reports')
+          .select()
+          .eq('user_id', userId)
+          .gte(
+            'created_at',
+            firstDateOfWeek(DateTime.now()).toIso8601String(),
+          )
+          .lte(
+            'created_at',
+            lastDateOfWeek(DateTime.now()).toIso8601String(),
+          );
     } catch (e) {}
   }
-
-  late final Signal<HomeState> homeSignal;
 
   Future<void> getWeeklyReport() async {
     showLoading();
@@ -96,19 +120,26 @@ class HomeController extends Controller {
             'created_at',
             lastDateOfWeek(DateTime.now()).toIso8601String(),
           )
-          .maybeSingle()
-          .then((json) {
-        if (json != null) {
-          final report = Report.fromJson(json);
+          .select()
+          .then(
+        (json) {
+          print(json);
+          final reports = json.map(Report.fromJson).toList();
+          final prevReports = [...homeState.dailyReports];
+
+          for (int i = 0; i < reports.length; i++) {
+            prevReports[i] = reports[i];
+          }
           homeSignal.set(
             homeSignal.value.copyWith(
-              viewModel:
-                  homeSignal.value.viewModel.copyWith(weeklyReport: report),
+              viewModel: homeSignal.value.viewModel.copyWith(
+                dailyReports: prevReports,
+              ),
             ),
           );
-        }
-        hideLoading();
-      });
+          hideLoading();
+        },
+      );
     } catch (e) {
       hideLoading();
     }
@@ -183,7 +214,6 @@ class HomeController extends Controller {
         hideLoading();
       });
     } catch (e) {
-      print(e.toString());
       hideLoading();
     }
   }
@@ -213,7 +243,6 @@ class HomeController extends Controller {
         hideLoading();
       });
     } catch (e) {
-      print(e.toString());
       hideLoading();
     }
   }
@@ -240,22 +269,27 @@ class HomeController extends Controller {
 class _ViewModel {
   final bool isLoading;
   final Report? weeklyReport;
-  final Report? dailyReport;
+  final List<Report> dailyReports;
+  final Report? selectedReport;
+
   const _ViewModel({
     this.isLoading = false,
     this.weeklyReport,
-    this.dailyReport,
+    this.dailyReports = const [],
+    this.selectedReport,
   });
 
   _ViewModel copyWith({
     bool? isLoading,
     Report? weeklyReport,
-    Report? dailyReport,
+    List<Report>? dailyReports,
+    Report? selectedReport,
   }) {
     return _ViewModel(
       isLoading: isLoading ?? this.isLoading,
       weeklyReport: weeklyReport ?? this.weeklyReport,
-      dailyReport: dailyReport ?? this.dailyReport,
+      dailyReports: dailyReports ?? this.dailyReports,
+      selectedReport: selectedReport ?? this.selectedReport,
     );
   }
 }
@@ -274,7 +308,9 @@ abstract class HomeState {
   }
 
   Report? get weeklyReport => viewModel.weeklyReport;
+  List<Report> get dailyReports => viewModel.dailyReports;
   bool get isLoading => viewModel.isLoading;
+  Report? get selectedReport => viewModel.selectedReport;
 }
 
 class HomeStateInitial extends HomeState {

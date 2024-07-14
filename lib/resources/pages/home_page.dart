@@ -85,7 +85,11 @@ class _HomePageState extends NyState<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildWeeklyReportWidget(signal.weeklyReport),
-                      // _buildDailyReportWidget(),
+                      SizedBox(height: 16),
+                      _buildDailyReportWidget(
+                        signal.dailyReports,
+                        signal.selectedReport!,
+                      ),
                     ],
                   ),
                 ),
@@ -191,9 +195,9 @@ class _HomePageState extends NyState<HomePage> {
                         color: color,
                         margin: EdgeInsets.symmetric(horizontal: 16),
                         padding: EdgeInsets.symmetric(
-                          vertical: 4,
+                          vertical: 8,
                         ),
-                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
                         child: Text(
                           'Please submit report',
                           textAlign: TextAlign.center,
@@ -212,9 +216,78 @@ class _HomePageState extends NyState<HomePage> {
     );
   }
 
+  Widget _buildDailyReportWidget(
+    List<Report> dailyReports,
+    Report selected,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Daily',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 12),
+        Row(
+          children: dailyReports
+              .map(
+                (report) => _buildDailyReportCircle(
+                  report,
+                  report.createdAt.isSameDay(selected.createdAt!),
+                ),
+              )
+              .toList(),
+        ),
+        SizedBox(height: 12),
+        _buildDailyReportCard(selected),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     _effect.dispose();
     super.dispose();
+  }
+
+  Widget _buildDailyReportCircle(Report report, bool isSelected) {
+    final isToday = report.createdAt.isSameDay(DateTime.now());
+
+    final isReported = report.content != null;
+    return Expanded(
+      child: BoxColor(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 4,
+            color: Colors.black12,
+          )
+        ],
+        color: !isToday
+            ? Colors.white
+            : isReported
+                ? Colors.green
+                : Colors.red,
+        padding: EdgeInsets.all(6),
+        child: Center(
+          child: Text(
+            '${report.createdAt?.day ?? '--'}',
+            style: TextStyle(
+              fontWeight: isToday ? FontWeight.bold : FontWeight.w400,
+              color: !isToday ? Colors.black : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyReportCard(Report report) {
+    return BoxColor(
+      child: Text(report.createdAt.toString()),
+    );
   }
 }
