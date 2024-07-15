@@ -21,11 +21,16 @@ class LoginController extends Controller {
     required String email,
     required String password,
   }) async {
-    await authController.signIn(
+    await authController
+        .signIn(
       email: email,
       password: password,
-    );
-    loginSignal.set(loginState.copyWith<LoginSuccessState>());
+    )
+        .then((success) {
+      if (success) {
+        loginSignal.set(loginState.copyWith<LoginSuccessState>());
+      }
+    });
   }
 }
 

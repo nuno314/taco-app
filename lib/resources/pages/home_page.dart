@@ -21,47 +21,27 @@ class HomePage extends NyStatefulWidget<HomeController> {
 class _HomePageState extends NyState<HomePage> {
   /// [HomeController] controller
   HomeController get controller => widget.controller;
-  late final Effect _effect;
 
   @override
   init() {
     super.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _effect = Effect(
+      Effect(
         (e) {
-          final state = controller.homeState;
+          final state = controller.homeSignal.value;
+          print(state);
           if (state is LogOutState) {
             routeTo(
               LoginPage.path,
               navigationType: NavigationType.pushAndForgetAll,
             );
+          } else if (state is SubmitDailyState) {
+            controller.getTacos();
           }
         },
       );
     });
   }
-
-  /// The boot method is called before the [view] is rendered.
-  /// You can override this method to perform any async operations.
-  /// Try uncommenting the code below.
-  // @override
-  // boot() async {
-  //   dump("boot");
-  //   await Future.delayed(Duration(seconds: 2));
-  // }
-
-  /// If you would like to use the Skeletonizer loader,
-  /// uncomment the code below.
-  // bool get useSkeletonizer => true;
-
-  /// The Loading widget is shown while the [boot] method is running.
-  /// You can override this method to show a custom loading widget.
-  // @override
-  // Widget loading(BuildContext context) {
-  //   return Scaffold(
-  //       body: Center(child: Text("Loading..."))
-  //   );
-  // }
 
   /// The [view] method should display your page.
   @override
@@ -85,16 +65,20 @@ class _HomePageState extends NyState<HomePage> {
             : SafeAreaWidget(
                 child: BoxColor(
                   color: Colors.white,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildWeeklyReportWidget(signal.weeklyReport),
-                      SizedBox(height: 16),
-                      _buildDailyReportWidget(
-                        signal.dailyReports,
-                        signal.selectedReport,
-                      ),
-                    ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTacosSession(signal.username, signal.tacos),
+                        SizedBox(height: 32),
+                        _buildWeeklyReportWidget(signal.weeklyReport),
+                        SizedBox(height: 32),
+                        _buildDailyReportWidget(
+                          signal.dailyReports,
+                          signal.selectedReport,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -120,11 +104,11 @@ class _HomePageState extends NyState<HomePage> {
         Text(
           'Weekly',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 12),
         BoxColor(
           boxShadow: [
             BoxShadow(
@@ -182,11 +166,11 @@ class _HomePageState extends NyState<HomePage> {
                   ],
                 ),
               ),
-              Divider(),
+              Divider(thickness: 1),
               BoxColor(
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(6),
-                  bottomRight: Radius.circular(6),
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
                 padding: EdgeInsets.fromLTRB(16, 6, 16, 12),
                 color: Colors.white,
@@ -231,7 +215,7 @@ class _HomePageState extends NyState<HomePage> {
         Text(
           'Daily',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -254,12 +238,13 @@ class _HomePageState extends NyState<HomePage> {
 
   @override
   void dispose() {
-    _effect.dispose();
     super.dispose();
   }
 
   Widget _buildDailyReportCircle(Report report, bool isSelected) {
     final isToday = report.createdAt.isSameDay(DateTime.now());
+    final isBefore = report.createdAt?.isBefore(DateTime.now());
+
     final isReported = report.content != null;
     return Expanded(
       child: BoxColor(
@@ -268,22 +253,24 @@ class _HomePageState extends NyState<HomePage> {
           width: 2,
           color: isReported
               ? Colors.green
-              : !isToday
-                  ? Colors.transparent
+              : isBefore == true
+                  ? Colors.red
                   : Colors.transparent,
         ),
-        color: isReported ? Colors.white : Color(0xFFdddddd),
+        color: isSelected
+            ? isReported
+                ? Colors.green
+                : Colors.red
+            : isReported || isBefore == true
+                ? Colors.white
+                : Color(0xFFdddddd),
         padding: EdgeInsets.all(6),
         child: Center(
           child: Text(
             '${report.createdAt?.day ?? '--'}',
             style: TextStyle(
               fontWeight: isToday ? FontWeight.bold : FontWeight.w400,
-              color: isReported
-                  ? Colors.black
-                  : !isToday
-                      ? Colors.black
-                      : Colors.white,
+              color: isSelected ? Colors.white : Colors.black,
             ),
           ),
         ),
@@ -314,12 +301,27 @@ class _HomePageState extends NyState<HomePage> {
             ),
             padding: EdgeInsets.fromLTRB(16, 10, 16, 8),
             color: isReported ? Colors.green : Colors.orange.shade300,
-            child: Text(
-              isReported ? 'Reported' : 'Waiting',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    isReported ? 'Reported' : 'Waiting',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (isReported)
+                  Text(
+                    report.createdAt?.toFormat(DateFormat.HOUR24_MINUTE) ??
+                        '--',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+              ],
             ),
           ),
           BoxColor(
@@ -327,7 +329,7 @@ class _HomePageState extends NyState<HomePage> {
               bottomLeft: Radius.circular(16),
               bottomRight: Radius.circular(16),
             ),
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
             color: Colors.white,
             child: report.content != null
                 ? SizedBox(
@@ -384,6 +386,45 @@ class _HomePageState extends NyState<HomePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTacosSession(String? user, int tacos) {
+    if (user == null) {
+      return SizedBox();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Tacos',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 12),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            children: [
+              Expanded(
+                  child: Text(
+                user,
+                style: TextStyle(
+                  fontSize: 16,
+                ),
+              )),
+              Text(
+                '${tacos} 🌮',
+                style: TextStyle(
+                  fontSize: 16,
+                ),
+              )
+            ],
+          ),
+        )
+      ],
     );
   }
 }

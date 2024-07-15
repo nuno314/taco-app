@@ -21,7 +21,7 @@ class AuthSolidController {
 
   late final Signal<AuthSignal> authSignal;
 
-  Future signUp({
+  Future<bool> signUp({
     required String email,
     required String password,
   }) async {
@@ -46,25 +46,34 @@ class AuthSolidController {
           isSuccess: true,
         ),
       );
+      authSignal.set(
+        authSignal.value.copyWith(
+          isLoading: false,
+          isError: false,
+          isSuccess: false,
+        ),
+      );
+      return true;
     } catch (e) {
+      print(e);
       authSignal.set(
         authSignal.value.copyWith(
           isLoading: false,
           isError: true,
         ),
       );
+      authSignal.set(
+        authSignal.value.copyWith(
+          isLoading: false,
+          isError: false,
+          isSuccess: false,
+        ),
+      );
+      return false;
     }
-
-    authSignal.set(
-      authSignal.value.copyWith(
-        isLoading: false,
-        isError: false,
-        isSuccess: false,
-      ),
-    );
   }
 
-  Future<void> signIn({
+  Future<bool> signIn({
     required String email,
     required String password,
   }) async {
@@ -92,6 +101,14 @@ class AuthSolidController {
           isSuccess: true,
         ),
       );
+      authSignal.set(
+        authSignal.value.copyWith(
+          isLoading: false,
+          isError: false,
+          isSuccess: false,
+        ),
+      );
+      return true;
     } catch (e) {
       authSignal.set(
         authSignal.value.copyWith(
@@ -99,15 +116,8 @@ class AuthSolidController {
           isError: true,
         ),
       );
+      return false;
     }
-
-    authSignal.set(
-      authSignal.value.copyWith(
-        isLoading: false,
-        isError: false,
-        isSuccess: false,
-      ),
-    );
   }
 
   void dispose() {

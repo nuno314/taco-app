@@ -3,6 +3,7 @@ import 'package:flutter_app/app/controllers/auth_controller.dart';
 import 'package:flutter_app/app/controllers/sign_up_controller.dart';
 import 'package:flutter_app/bootstrap/helpers.dart';
 import 'package:flutter_app/config/design.dart';
+import 'package:flutter_app/resources/pages/home_page.dart';
 import 'package:flutter_app/resources/widgets/box_color.dart';
 import 'package:flutter_app/resources/widgets/button_widget.dart';
 import 'package:flutter_app/resources/widgets/input_container.dart';
@@ -34,6 +35,13 @@ class _SignUpPageState extends NyState<SignUpPage> {
               context,
               style: ToastNotificationStyleType.WARNING,
               description: 'Cannot sign up',
+            );
+          }
+
+          if (controller.signUpState is SignUpSuccessState) {
+            routeTo(
+              HomePage.path,
+              navigationType: NavigationType.pushAndForgetAll,
             );
           }
         },
@@ -78,12 +86,20 @@ class _SignUpPageState extends NyState<SignUpPage> {
                         controller: _emailController,
                         title: 'Email',
                         hintText: 'Enter email',
+                        maxLines: 1,
                       ),
                       SizedBox(height: 16),
                       TextFieldWidget(
                         controller: _passwordController,
                         title: 'Password',
                         hintText: 'Enter password',
+                        maxLines: 1,
+                        onSubmitted: (value) {
+                          controller.signUp(
+                            email: _emailController.text,
+                            password: value,
+                          );
+                        },
                       ),
                       SizedBox(height: 48),
                       ButtonWidget.recommend(

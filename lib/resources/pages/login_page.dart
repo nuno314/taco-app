@@ -66,8 +66,12 @@ class _LoginPageState extends NyState<LoginPage> {
           SafeAreaWidget(
             child: Container(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  SizedBox(height: 20),
+                  Text(
+                    '🌮',
+                    style: TextStyle(fontSize: 150),
+                  ),
                   Text('Hi there!'),
                   Text('Sign in to your account'),
                   SizedBox(height: 16),
