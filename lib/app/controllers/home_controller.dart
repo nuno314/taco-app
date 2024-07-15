@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/app/controllers/auth_controller.dart';
 import 'package:flutter_app/app/models/report.dart';
+import 'package:flutter_app/resources/pages/login_page.dart';
 import 'package:flutter_app/resources/widgets/bottom_sheet.dart';
 import 'package:flutter_app/resources/widgets/button_widget.dart';
 import 'package:flutter_app/resources/widgets/input_container.dart';
@@ -33,7 +34,10 @@ class HomeController extends Controller {
 
     homeSignal = Signal<HomeState>(
       HomeStateInitial(
-          viewModel: _ViewModel(username: supabase.auth.currentUser!.email)),
+        viewModel: _ViewModel(
+          username: supabase.auth.currentUser!.email,
+        ),
+      ),
     );
 
     getWeeklyReport();
@@ -72,7 +76,10 @@ class HomeController extends Controller {
   }
 
   doLogOut(BuildContext context) {
-    homeSignal.set(homeState.copyWith<LogOutState>());
+    routeTo(
+      LoginPage.path,
+      navigationType: NavigationType.pushAndForgetAll,
+    );
 
     authController.logOut();
   }
@@ -96,7 +103,6 @@ class HomeController extends Controller {
           )
           .select()
           .then((json) {
-        print(json);
         final reports = json.map(Report.fromJson).toList();
         final prevReports = List.generate(
           7,
@@ -148,7 +154,7 @@ class HomeController extends Controller {
           if (json.isNotEmpty) {
             final _report = Report.fromJson(json.first);
             homeSignal.set(
-              homeState.copyWith<SubmitWeeklyState>(
+              homeState.copyWith(
                 viewModel: homeState.viewModel.copyWith(
                   weeklyReport: _report,
                 ),
@@ -256,24 +262,30 @@ class HomeController extends Controller {
         content: _weeklyReportCtrl.text,
         createdAt: DateTime.now(),
       );
-      supabase
-          .from("weekly_reports")
-          .insert(report.toJson())
-          .select()
-          .then((json) {
-        final _report = Report.fromJson(json.first);
-        homeSignal.set(
-          homeState.copyWith<SubmitWeeklyState>(
-            viewModel: homeState.viewModel.copyWith(
-              weeklyReport: _report,
+      supabase.from("weekly_reports").insert(report.toJson()).select().then(
+        (json) {
+          final _report = Report.fromJson(json.first);
+          homeSignal.set(
+            homeState.copyWith<SubmitWeeklyState>(
+              viewModel: homeState.viewModel.copyWith(
+                weeklyReport: _report,
+              ),
             ),
-          ),
-        );
-        hideLoading();
-      });
+          );
+          getTacos();
+          closeModal();
+          hideLoading();
+        },
+      );
     } catch (e) {
       hideLoading();
     }
+  }
+
+  closeModal() {
+    Navigator.pop(
+      NyNavigator.instance.router.navigatorKey!.currentState!.context,
+    );
   }
 
   insertDailyReport() {
@@ -285,29 +297,16 @@ class HomeController extends Controller {
         content: _dailyReportCtrl.text,
         createdAt: DateTime.now(),
       );
-      supabase
-          .from("daily_reports")
-          .insert(report.toJson())
-          .select()
-          .then((json) {
-        final _report = Report.fromJson(json.first);
-        final dailyReports = [...homeState.dailyReports];
-        if (_report.createdAt != null)
-          dailyReports.forEach((e) {
-            if (e.createdAt.isSameDay(_report.createdAt!)) {
-              e = _report;
-            }
-          });
+      supabase.from("daily_reports").insert(report.toJson()).select().then(
+        (json) {
+          getDailyReports();
+          getTacos();
 
-        homeSignal.set(
-          homeState.copyWith<SubmitDailyState>(
-            viewModel: homeState.viewModel.copyWith(
-              dailyReports: dailyReports,
-            ),
-          ),
-        );
-        hideLoading();
-      });
+          closeModal();
+        },
+      );
+
+      hideLoading();
     } catch (e) {
       hideLoading();
     }
@@ -335,6 +334,7 @@ class HomeController extends Controller {
             ),
           ),
         );
+        closeModal();
         hideLoading();
       });
     } catch (e) {
@@ -344,23 +344,22 @@ class HomeController extends Controller {
 
   showLoading() {
     homeSignal.set(
-      homeSignal.value.copyWith(
-        viewModel: homeSignal.value.viewModel.copyWith(isLoading: true),
+      homeState.copyWith(
+        viewModel: homeState.viewModel.copyWith(isLoading: true),
       ),
     );
   }
 
   hideLoading() {
     homeSignal.set(
-      homeSignal.value.copyWith(
-        viewModel: homeSignal.value.viewModel.copyWith(isLoading: false),
+      homeState.copyWith(
+        viewModel: homeState.viewModel.copyWith(isLoading: false),
       ),
     );
   }
 
-  closeModal() {}
-
   getTacos() {
+    print(getTacos);
     try {
       supabase
           .from('tacos')
@@ -453,12 +452,6 @@ class SubmitWeeklyState extends HomeState {
   }) : super(viewModel);
 }
 
-class SubmitDailyState extends HomeState {
-  SubmitDailyState({
-    _ViewModel viewModel = const _ViewModel(),
-  }) : super(viewModel);
-}
-
 class LogOutState extends HomeState {
   LogOutState({
     _ViewModel viewModel = const _ViewModel(),
@@ -473,9 +466,6 @@ final _factories = <Type,
         viewModel: viewModel,
       ),
   SubmitWeeklyState: (viewModel) => SubmitWeeklyState(
-        viewModel: viewModel,
-      ),
-  SubmitDailyState: (viewModel) => SubmitDailyState(
         viewModel: viewModel,
       ),
   LogOutState: (viewModel) => LogOutState(

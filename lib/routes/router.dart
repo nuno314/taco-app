@@ -1,3 +1,4 @@
+import '/resources/pages/onboarding_page.dart';
 import 'package:flutter_app/resources/pages/sign_up_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
@@ -45,4 +46,5 @@ appRouter() => nyRoutes((router) {
       //
       //   router.route(AccountPage.path, (context) => AccountPage());
       // });
-    });
+      router.route(OnboardingPage.path, (context) => OnboardingPage());
+});

@@ -1,3 +1,4 @@
+import '/app/controllers/onboarding_controller.dart';
 import 'package:flutter_app/app/controllers/sign_up_controller.dart';
 import 'package:flutter_app/app/controllers/splash_controller.dart';
 
@@ -51,4 +52,6 @@ final Map<Type, dynamic> controllers = {
 
   LoginController: () => LoginController(),
   SignUpController: () => SignUpController(),
+
+  OnboardingController: () => OnboardingController(),
 };

@@ -12,6 +12,7 @@ class TextFieldWidget extends StatelessWidget {
     this.title,
     this.maxLines,
     this.onSubmitted,
+    this.obscureText,
   });
 
   final TextEditingController? controller;
@@ -23,6 +24,7 @@ class TextFieldWidget extends StatelessWidget {
   final bool fillColor;
   final int? maxLines;
   final void Function(String)? onSubmitted;
+  final bool? obscureText;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class TextFieldWidget extends StatelessWidget {
           focusNode: focusNode,
           maxLines: maxLines,
           onSubmitted: onSubmitted,
+          obscureText: obscureText ?? false,
           decoration: decoration ??
               InputDecoration(
                 filled: !enabled || fillColor,

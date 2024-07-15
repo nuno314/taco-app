@@ -35,8 +35,6 @@ class _HomePageState extends NyState<HomePage> {
               LoginPage.path,
               navigationType: NavigationType.pushAndForgetAll,
             );
-          } else if (state is SubmitDailyState) {
-            controller.getTacos();
           }
         },
       );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/config/storage_keys.dart';
 import 'package:flutter_app/resources/pages/home_page.dart';
 import 'package:flutter_app/resources/pages/login_page.dart';
+import 'package:flutter_app/resources/pages/onboarding_page.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
 import '/app/controllers/splash_controller.dart';
@@ -24,7 +26,21 @@ class _SplashPageState extends NyState<SplashPage> {
           navigationType: NavigationType.pushAndForgetAll,
         );
       } else {
-        routeTo(LoginPage.path);
+        NyStorage.read(StorageKey.newUser).then((value) {
+          if (value == 'false') {
+            routeTo(
+              LoginPage.path,
+              navigationType: NavigationType.pushAndForgetAll,
+            );
+          } else {
+            routeTo(
+              OnboardingPage.path,
+              navigationType: NavigationType.pushAndForgetAll,
+            );
+          }
+        });
+
+        ;
       }
     });
   }

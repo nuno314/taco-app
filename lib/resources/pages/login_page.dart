@@ -64,7 +64,7 @@ class _LoginPageState extends NyState<LoginPage> {
       builder: (context, value, child) => Stack(
         children: [
           SafeAreaWidget(
-            child: Container(
+            child: SingleChildScrollView(
               child: Column(
                 children: [
                   SizedBox(height: 20),
@@ -95,6 +95,7 @@ class _LoginPageState extends NyState<LoginPage> {
                         password: value,
                       );
                     },
+                    obscureText: true,
                   ),
                   SizedBox(height: 48),
                   ButtonWidget.primary(
