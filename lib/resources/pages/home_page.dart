@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/app/models/report.dart';
 import 'package:flutter_app/config/design.dart';
+import 'package:flutter_app/resources/pages/login_page.dart';
 import 'package:flutter_app/resources/widgets/box_color.dart';
 import 'package:flutter_app/utils/datetime_utils.dart';
 import 'package:flutter_solidart/flutter_solidart.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:nylo_framework/nylo_framework.dart';
 
@@ -27,10 +29,12 @@ class _HomePageState extends NyState<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _effect = Effect(
         (e) {
-          print('=go');
-          final signal = controller.homeSignal.value;
-          if (signal is SubmitWeeklyState) {
-            controller.closeModal();
+          final state = controller.homeState;
+          if (state is LogOutState) {
+            routeTo(
+              LoginPage.path,
+              navigationType: NavigationType.pushAndForgetAll,
+            );
           }
         },
       );
@@ -88,7 +92,7 @@ class _HomePageState extends NyState<HomePage> {
                       SizedBox(height: 16),
                       _buildDailyReportWidget(
                         signal.dailyReports,
-                        signal.selectedReport!,
+                        signal.selectedReport,
                       ),
                     ],
                   ),
@@ -199,7 +203,7 @@ class _HomePageState extends NyState<HomePage> {
                         ),
                         borderRadius: BorderRadius.all(Radius.circular(8)),
                         child: Text(
-                          'Please submit report',
+                          'Report',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
@@ -218,8 +222,9 @@ class _HomePageState extends NyState<HomePage> {
 
   Widget _buildDailyReportWidget(
     List<Report> dailyReports,
-    Report selected,
+    Report? selected,
   ) {
+    if (selected == null) return SizedBox();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -255,29 +260,30 @@ class _HomePageState extends NyState<HomePage> {
 
   Widget _buildDailyReportCircle(Report report, bool isSelected) {
     final isToday = report.createdAt.isSameDay(DateTime.now());
-
     final isReported = report.content != null;
     return Expanded(
       child: BoxColor(
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 4,
-            color: Colors.black12,
-          )
-        ],
-        color: !isToday
-            ? Colors.white
-            : isReported
-                ? Colors.green
-                : Colors.red,
+        border: Border.all(
+          width: 2,
+          color: isReported
+              ? Colors.green
+              : !isToday
+                  ? Colors.transparent
+                  : Colors.transparent,
+        ),
+        color: isReported ? Colors.white : Color(0xFFdddddd),
         padding: EdgeInsets.all(6),
         child: Center(
           child: Text(
             '${report.createdAt?.day ?? '--'}',
             style: TextStyle(
               fontWeight: isToday ? FontWeight.bold : FontWeight.w400,
-              color: !isToday ? Colors.black : Colors.white,
+              color: isReported
+                  ? Colors.black
+                  : !isToday
+                      ? Colors.black
+                      : Colors.white,
             ),
           ),
         ),
@@ -286,8 +292,98 @@ class _HomePageState extends NyState<HomePage> {
   }
 
   Widget _buildDailyReportCard(Report report) {
+    final isReported = report.content != null;
     return BoxColor(
-      child: Text(report.createdAt.toString()),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 4,
+          color: Colors.black12,
+        )
+      ],
+      color: Colors.white,
+      borderRadius: BorderRadius.all(
+        Radius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BoxColor(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 8),
+            color: isReported ? Colors.green : Colors.orange.shade300,
+            child: Text(
+              isReported ? 'Reported' : 'Waiting',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          BoxColor(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+            color: Colors.white,
+            child: report.content != null
+                ? SizedBox(
+                    height: 200,
+                    child: Text(
+                      report.content ?? '--',
+                      style: TextStyle(
+                        color: Colors.black,
+                      ),
+                    ),
+                  )
+                : BoxColor(
+                    onTap: () {
+                      controller.openDailyReportBottomSheet(context);
+                    },
+                    margin: EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    padding: EdgeInsets.symmetric(
+                      vertical: 8,
+                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    child: Column(
+                      children: [
+                        SvgPicture.asset(
+                          'public/assets/svg/no_data.svg',
+                          height: 120,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'No data',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        BoxColor(
+                          borderRadius: BorderRadius.circular(16),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          color: Theme.of(context).colorScheme.primary,
+                          child: Text(
+                            'Report',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

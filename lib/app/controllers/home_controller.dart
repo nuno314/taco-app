@@ -30,21 +30,14 @@ class HomeController extends Controller {
     super.construct(context);
     authController = Solid.get<AuthSolidController>(context);
     userId = supabase.auth.currentSession!.user.id;
-    final initDailyReports = List.generate(
-      7,
-      (index) => Report(
-        createdAt: _firstDateOfWeek.copyWith(
-          day: index + _firstDateOfWeek.day,
-        ),
-      ),
-    );
+
     homeSignal = Signal<HomeState>(
       HomeStateInitial(
-        viewModel: _ViewModel(
-            dailyReports: initDailyReports,
-            selectedReport: initDailyReports
-                .firstWhere((e) => e.createdAt.isSameDay(DateTime.now()))),
-      ),
+          viewModel: _ViewModel(
+              // dailyReports: initDailyReports,
+              // selectedReport: initDailyReports
+              //     .firstWhere((e) => e.createdAt.isSameDay(DateTime.now()))),
+              )),
     );
 
     getWeeklyReport();
@@ -83,6 +76,7 @@ class HomeController extends Controller {
 
   doLogOut(BuildContext context) {
     authController.logOut();
+    homeSignal.set(homeState.copyWith<LogOutState>());
   }
 
   late final Signal<HomeState> homeSignal;
@@ -96,12 +90,42 @@ class HomeController extends Controller {
           .eq('user_id', userId)
           .gte(
             'created_at',
-            firstDateOfWeek(DateTime.now()).toIso8601String(),
+            firstDateOfWeek(DateTime.now()).startDate.toIso8601String(),
           )
           .lte(
             'created_at',
-            lastDateOfWeek(DateTime.now()).toIso8601String(),
-          );
+            lastDateOfWeek(DateTime.now()).endDate.toIso8601String(),
+          )
+          .select()
+          .then((json) {
+        print(json);
+        final reports = json.map(Report.fromJson).toList();
+        final prevReports = List.generate(
+          7,
+          (index) => Report(
+            createdAt: _firstDateOfWeek.copyWith(
+              day: index + _firstDateOfWeek.day,
+            ),
+          ),
+        );
+
+        for (int i = 0; i < reports.length; i++) {
+          prevReports[i] = reports[i];
+        }
+
+        final selected = prevReports
+            .where((e) => e.createdAt.isSameDay(DateTime.now()))
+            .firstOrNull;
+        homeSignal.set(
+          homeSignal.value.copyWith(
+            viewModel: homeSignal.value.viewModel.copyWith(
+              dailyReports: prevReports,
+              selectedReport: selected,
+            ),
+          ),
+        );
+        hideLoading();
+      });
     } catch (e) {}
   }
 
@@ -114,26 +138,20 @@ class HomeController extends Controller {
           .eq('user_id', userId)
           .gte(
             'created_at',
-            firstDateOfWeek(DateTime.now()).toIso8601String(),
+            firstDateOfWeek(DateTime.now()).startDate.toIso8601String(),
           )
           .lte(
             'created_at',
-            lastDateOfWeek(DateTime.now()).toIso8601String(),
+            lastDateOfWeek(DateTime.now()).endDate.toIso8601String(),
           )
           .select()
           .then(
         (json) {
-          print(json);
-          final reports = json.map(Report.fromJson).toList();
-          final prevReports = [...homeState.dailyReports];
-
-          for (int i = 0; i < reports.length; i++) {
-            prevReports[i] = reports[i];
-          }
+          final _report = Report.fromJson(json.first);
           homeSignal.set(
-            homeSignal.value.copyWith(
-              viewModel: homeSignal.value.viewModel.copyWith(
-                dailyReports: prevReports,
+            homeState.copyWith<SubmitWeeklyState>(
+              viewModel: homeState.viewModel.copyWith(
+                weeklyReport: _report,
               ),
             ),
           );
@@ -173,11 +191,50 @@ class HomeController extends Controller {
               builder: (context, signal, child) => ValueListenableBuilder(
                 valueListenable: _weeklyReportCtrl,
                 builder: (context, value, child) => ButtonWidget.primary(
-                  enable: value.text.isNotEmpty && !signal.isLoading,
+                  enable: value.text.isNotEmpty &&
+                      !signal.isLoading &&
+                      value.text != homeState.weeklyReport!.content!,
                   context: context,
                   title: 'Submit',
                   onPressed:
                       isEditing ? updateWeeklyReport : insertWeeklyReport,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void openDailyReportBottomSheet(
+    BuildContext context, {
+    bool isEditing = false,
+  }) {
+    if (isEditing)
+      _dailyReportCtrl.text = homeSignal.value.selectedReport!.content ?? '';
+    showModal(
+      context,
+      title: 'Daily Report',
+      Padding(
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Column(
+          children: [
+            TextFieldWidget(
+              controller: _dailyReportCtrl,
+              focusNode: _dailyReportFcn,
+              maxLines: 5,
+            ),
+            SizedBox(height: 26),
+            SignalBuilder(
+              signal: homeSignal,
+              builder: (context, signal, child) => ValueListenableBuilder(
+                valueListenable: _dailyReportCtrl,
+                builder: (context, value, child) => ButtonWidget.primary(
+                  enable: value.text.isNotEmpty && !signal.isLoading,
+                  context: context,
+                  title: 'Submit',
+                  onPressed: insertDailyReport,
                 ),
               ),
             ),
@@ -203,11 +260,48 @@ class HomeController extends Controller {
           .insert(report.toJson())
           .select()
           .then((json) {
-        final _report = Report.fromJson(json);
+        final _report = Report.fromJson(json.first);
         homeSignal.set(
           homeState.copyWith<SubmitWeeklyState>(
             viewModel: homeState.viewModel.copyWith(
               weeklyReport: _report,
+            ),
+          ),
+        );
+        hideLoading();
+      });
+    } catch (e) {
+      hideLoading();
+    }
+  }
+
+  insertDailyReport() {
+    showLoading();
+
+    try {
+      final report = Report(
+        userId: userId,
+        content: _dailyReportCtrl.text,
+        createdAt: DateTime.now(),
+      );
+      supabase
+          .from("daily-reports")
+          .insert(report.toJson())
+          .select()
+          .then((json) {
+        final _report = Report.fromJson(json.first);
+        final dailyReports = [...homeState.dailyReports];
+        if (_report.createdAt != null)
+          dailyReports.forEach((e) {
+            if (e.createdAt.isSameDay(_report.createdAt!)) {
+              e = _report;
+            }
+          });
+
+        homeSignal.set(
+          homeState.copyWith<SubmitDailyState>(
+            viewModel: homeState.viewModel.copyWith(
+              dailyReports: dailyReports,
             ),
           ),
         );
@@ -325,6 +419,18 @@ class SubmitWeeklyState extends HomeState {
   }) : super(viewModel);
 }
 
+class SubmitDailyState extends HomeState {
+  SubmitDailyState({
+    _ViewModel viewModel = const _ViewModel(),
+  }) : super(viewModel);
+}
+
+class LogOutState extends HomeState {
+  LogOutState({
+    _ViewModel viewModel = const _ViewModel(),
+  }) : super(viewModel);
+}
+
 final _factories = <Type,
     Function(
   _ViewModel viewModel,
@@ -333,6 +439,9 @@ final _factories = <Type,
         viewModel: viewModel,
       ),
   SubmitWeeklyState: (viewModel) => SubmitWeeklyState(
+        viewModel: viewModel,
+      ),
+  LogOutState: (viewModel) => LogOutState(
         viewModel: viewModel,
       ),
 };

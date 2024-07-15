@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/app/controllers/login_controller.dart';
 import 'package:flutter_app/bootstrap/helpers.dart';
 import 'package:flutter_app/config/design.dart';
+import 'package:flutter_app/resources/pages/home_page.dart';
 import 'package:flutter_app/resources/pages/sign_up_page.dart';
 import 'package:flutter_app/resources/widgets/button_widget.dart';
 import 'package:flutter_app/resources/widgets/input_container.dart';
@@ -30,6 +31,12 @@ class _LoginPageState extends NyState<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _effect = Effect(
         (e) {
+          if (controller.loginState is LoginSuccessState) {
+            routeTo(
+              HomePage.path,
+              navigationType: NavigationType.pushAndForgetAll,
+            );
+          }
           final hasError = controller.authSignal.value.isError;
 
           if (hasError == true) {
@@ -69,6 +76,7 @@ class _LoginPageState extends NyState<LoginPage> {
                     title: 'Email',
                     hintText: 'Enter email',
                     focusNode: _emailFocusNode,
+                    maxLines: 1,
                   ),
                   SizedBox(height: 16),
                   TextFieldWidget(
@@ -76,6 +84,13 @@ class _LoginPageState extends NyState<LoginPage> {
                     title: 'Password',
                     hintText: 'Enter password',
                     focusNode: _passwordFocusNode,
+                    maxLines: 1,
+                    onSubmitted: (value) {
+                      controller.login(
+                        email: _emailController.text,
+                        password: value,
+                      );
+                    },
                   ),
                   SizedBox(height: 48),
                   ButtonWidget.primary(
